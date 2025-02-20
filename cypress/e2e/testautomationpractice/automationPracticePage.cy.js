@@ -7,7 +7,8 @@ describe("Autoamte all elements on test automation practice page",()=>{
     // object of Class 
     const practicePage= new automationPractice()
     it("Automate All GUI Elements",()=>{
-        practicePage.firstNameFiled().should('be.visible')
+        practicePage.firstNameFiled().should('be.visible').type("Automation Engineer",{delay:0})
+        practicePage.email().type("Abc123@gamil.com",{delay:0})
 
     })
 })
