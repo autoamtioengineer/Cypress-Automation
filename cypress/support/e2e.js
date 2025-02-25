@@ -16,6 +16,7 @@
 // Import commands.js using ES2015 syntax:
 import './commands'
  import 'cypress-file-upload'
+ import '@4tw/cypress-drag-drop'
 //disable fetch and xhr  
 const app = window.top;
 if (!app.document.head.querySelector("[data-hide-command-log-request]")) {
