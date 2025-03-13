@@ -141,7 +141,7 @@ describe("Autoamte all elements on test automation practice page", () => {
 
 
     })
-    it.only("Automate  Static Web Table, Drag and Drop and slider ", () => {
+    it("Automate  Static Web Table, Drag and Drop and slider ", () => {
         // Validates Static Web Table
         cy.get('table tbody').eq(0).find('th').then(($headers) => {
             const actualText = [...$headers].map(h => h.innerText.trim()); // Convert jQuery object to an array
@@ -171,34 +171,243 @@ describe("Autoamte all elements on test automation practice page", () => {
 
         // Verify the drop was successful
         cy.get('#droppable').should('contain', 'Dropped!');
+        // Slider working 
+        cy.get('.ui-slider-range').invoke('css', 'width').then((initialWidth) => {
+            cy.get('.ui-slider-handle').eq(1) // Select the second slider handle
+                .trigger('mousedown', { which: 1 }) // Click and hold
+                .trigger('mousemove', { clientX: 300 }) // Move to the right
+                .trigger('mouseup'); // Release the slider
 
-        
+            cy.get('.ui-slider-range').invoke('css', 'width').should('not.eq', initialWidth); // Check if width changed
+        })
+        practicePage.priceRange().should("not.have.value", "$75 - $300")
+        // Check if the Circle is Red
+        cy.get('circle') // Select <circle> inside SVG
+            .invoke('attr', 'fill')
+            .should('eq', 'red');
+
+        // Check if the Rectangle is Green (Already Working)
+        cy.get('.svg-container rect')
+            .invoke('attr', 'fill')
+            .should('eq', 'green');
+
+        // Check if the Triangle is Blue
+        cy.get('.svg-container svg polygon') // Select <polygon> inside SVG
+            .invoke('attr', 'fill')
+            .should('eq', 'blue');
+
+        // Scroll dropdwon 
+        practicePage.scrollDropdown().click()
+        cy.get('#dropdown').contains("Item 98").click()
+
 
     })
+    it("Autoamte labels and Links", () => {
+
+        cy.contains('h2', 'Labels And Links').should('be.visible'); // Main section title
+        cy.get('#mobiles > h4').should('be.visible').and('have.text', "Mobile Labels")
+        cy.get('#laptops > h4').should('be.visible').and('have.text', "Laptop Links")
+        cy.get('#broken-links > h4').should('be.visible').and('have.text', "Broken Links")
+        cy.get('#mobiles').within(() => {
+            cy.contains('Samsung').should('be.visible');
+            cy.contains('Real Me').should('be.visible');
+            cy.contains('Moto').should('be.visible');
+        });
+
+        cy.contains('a', 'Apple').then(($link) => {
+            const appleUrl = $link.prop('href');
+            cy.wrap($link).click();
+            // Switch to Apple.com
+            cy.origin(appleUrl, () => {
+              cy.url().should('include', 'apple');
+            });
+        
+            // Instead of cy.go('back'), revisit the original site
+            cy.visit('https://testautomationpractice.blogspot.com/');
+          });
+        
+          // Now, navigate to Lenovo
+          cy.contains('a', 'Lenovo').then(($link) => {
+            const lenovoUrl = $link.prop('href');
+        
+            cy.wrap($link).click();
+        
+            // Switch to Lenovo.com
+            cy.origin(lenovoUrl, () => {
+              cy.url().should('include', 'lenovo');
+            });
+        
+            // Again, revisit the original page
+            cy.visit('https://testautomationpractice.blogspot.com/');
+          });
+
+          cy.contains("a","Dell").then(($link)=>{
+            const dellLink=$link.prop('href')
+            cy.wrap($link).click()
+            // switch to dell
+            cy.origin(dellLink,()=>{
+                cy.url().should('include','dell')
+            })
+            // Again, revisit the original page
+            cy.visit('https://testautomationpractice.blogspot.com/');
+          })
 
 
 
 
 
+    })
+    it("Autoamte Brokens Links", () => {
+        cy.get('#broken-links').within(()=>{
+            cy.get('a').each(($link)=>{
+                const href= $link.prop('href')
+                if(href){
+                    cy.request({
+                        url:href,
+                        failOnStatusCode:false  // Prevent test failure due to 4xx/5xx errors
+                    }).then((response)=>{
+                        cy.log(`Checkig : ${href} - Status Code: ${response.status}`)
+
+          // Validate expected status codes
+          const expectedStatusCodes = [400, 401, 403, 404, 408, 500, 502, 503];
+          expect(expectedStatusCodes).to.include(response.status);
+                    })
+                }
+            })
+        })
+       
 
 
+    })
+    it("Dynamic Tabel",()=>{
+        let columnIndexes = {};
 
-
-
-
-
-
-
-
-
-
-    // it.only('Handling new Browser Window', function () {
-    //     cy.visit('https://alapanme.github.io/testing-cypress.html')
-    //     cy.window().then((win)=>{
-    //         cy.stub(win ,'open').as('popup')
-    //     })
-    //     cy.get('button').contains('Try it').click()
-    //     cy.get('@popup').should('be.calledWith',"https://the-internet.herokuapp.com/")
-
-    // })
+        // Step 1: Get column headers and store their indexes dynamically
+        cy.get("table").eq(1).find("thead tr th").each(($header, index) => {
+          columnIndexes[$header.text().trim()] = index;
+        });
+    
+        cy.then(() => {
+          // Step 2: Define all validation scenarios
+          const checks = [
+            ["Chrome", "CPU (%)", "CPU load of Chrome process"],
+            ["Firefox", "Memory (MB)", "Memory Size of Firefox process"],
+            ["Chrome", "Network (Mbps)", "Network speed of Chrome process"],
+            ["Firefox", "Disk (MB/s)", "Disk space of Firefox process"],
+          ];
+    
+          // Step 3: Iterate through each scenario and validate dynamically
+          checks.forEach(([rowText, columnText, summaryText]) => {
+            const columnIndex = columnIndexes[columnText]; // Get the column index dynamically
+    
+            cy.contains("table tbody tr", rowText) // Find the correct row
+              .find("td")
+              .eq(columnIndex) // Get value based on column position
+              .invoke("text")
+              .then((value) => {
+                cy.contains(summaryText).should("contain", value.trim());
+              });
+          });
+        });
+    
 })
+it("Pagination Web Table",()=>{
+ 
+    function checkAllCheckboxesAndPaginate() {
+        // ✅ Step 1: Check all checkboxes on the current page
+        cy.get('table').eq(2).find('tr input[type="checkbox"]').check();
+      
+        // ✅ Step 2: Find the active page's <li> and move to the next one
+        cy.get(".pagination li") // Get all <li> elements inside pagination
+          .find("a.active") // Find the active page
+          .parent() // Get its <li> parent
+          .next("li") // Get the next <li> (next page)
+          .find("a") // Find the <a> inside the next <li>
+          .then(($next) => {
+            if ($next.length) { 
+              cy.wrap($next).click(); 
+              cy.wait(1000); 
+              cy.get(".pagination a.active").should("have.text", $next.text());
+              checkAllCheckboxesAndPaginate();
+            } else {
+              cy.log("All checkboxes on all pages are checked! No more pages.");
+            }
+          });
+      }
+      
+ 
+      checkAllCheckboxesAndPaginate();
+    })
+it("Checks only the required checkboxes per page", () => {
+        const checkboxesToCheck = {
+          1: ["Tablet"],
+          2: ["Television", "Digital Camera"],
+          3: ["Fitness Tracker"],
+          4: ["Soundbar"],
+        };
+    
+        function checkPageCheckboxes(pageNumber) {
+          if (checkboxesToCheck[pageNumber]) {
+            checkboxesToCheck[pageNumber].forEach((item) => {
+              cy.get("table").eq(2).contains("td", item)
+                .parent()
+                .find('input[type="checkbox"]')
+                .check();
+            });
+          }
+        }
+    
+        function iterateThroughPages() {
+          cy.get(".pagination a").each(($el, index, $list) => {
+            cy.wrap($el).click();  // Click the page number
+            cy.wait(1000); // Ensure page loads
+            
+            // Get current page number and check its checkboxes
+            cy.get(".pagination a.active").invoke("text").then((pageNumber) => {
+              checkPageCheckboxes(pageNumber.trim());
+            });
+          });
+        }
+    
+        
+        iterateThroughPages();
+    });
+     it.only("Interacts with elements inside Shadow DOM", () => {
+       
+        cy.get('#shadow_host')
+        .shadow()
+        .find('#shadow_content')
+        .should('contain','Mobiles')
+       
+        cy.get('#shadow_host') // Get the shadow host element
+          .shadow() // Access the shadow DOM
+          .find('input[type="text"]') // Locate the text input inside the shadow root
+          .type('test'); // Type 'test' into the field
+          cy.get('#shadow_host') 
+          .shadow()
+          .find('input[type="checkbox"]') 
+          .check()
+          cy.get('#shadow_host') 
+          .shadow()
+          .find('input[type="file"]').attachFile('bot.jpg')
+        cy.get('a').contains("Youtube") 
+        .then((link) => {
+          cy.request(link.prop('href')).its('status').should('eq', 200); // Verify the link is accessible
+          expect(link.prop('href')).to.include('youtube.com');
+        })
+
+      });
+
+
+   
+})
+
+// it.only('Handling new Browser Window', function () {
+//     cy.visit('https://alapanme.github.io/testing-cypress.html')
+//     cy.window().then((win)=>{
+//         cy.stub(win ,'open').as('popup')
+//     })
+//     cy.get('button').contains('Try it').click()
+//     cy.get('@popup').should('be.calledWith',"https://the-internet.herokuapp.com/")
+
+// })

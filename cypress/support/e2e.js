@@ -17,6 +17,7 @@
 import './commands'
  import 'cypress-file-upload'
  import '@4tw/cypress-drag-drop'
+ import 'cypress-real-events/support';
 //disable fetch and xhr  
 const app = window.top;
 if (!app.document.head.querySelector("[data-hide-command-log-request]")) {

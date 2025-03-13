@@ -128,5 +128,8 @@ class automationPractice {
    priceRange(){
       return cy.get('#amount')
    }
+   scrollDropdown(){
+      return cy.get('#comboBox')
+   }
 }
 export default automationPractice
